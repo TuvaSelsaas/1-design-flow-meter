@@ -11,9 +11,9 @@ from math import radians, pi, cos, degrees
 # Global design parameters
 defaultHoles = 6            # number of screw holes
 defaultRH = 3               # screw hole radius
-defaultLength = 100
-defaultTheta = radians(70) # [deg] angle between sensor-pipe and main-pipe
-defaultD = 40              # [cm] pipe/valve diameter
+defaultLength = 100         # [cm] length of the main pipe
+defaultTheta = radians(70)  # [deg] angle between sensor-pipe and main-pipe
+defaultD = 40               # [cm] pipe/valve diameter
 
 # Global set of event _handlers to keep them referenced for the duration of the command
 _handlers = []
