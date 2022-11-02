@@ -47,7 +47,10 @@ class FlowValveCommandExecuteHandler(adsk.core.CommandEventHandler):
             flow_valve = FlowValve()
             for input in inputs:
                 if input.id == 'theta':
-                    flow_valve.theta = unitsMgr.evaluateExpression(input.expression, "deg")
+                    if input.selectedItem.name == '70 deg':
+                        flow_valve.theta = radians(70)
+                    else:
+                        flow_valve.theta = radians(45)
                 elif input.id == 'D':
                     flow_valve.D = unitsMgr.evaluateExpression(input.expression, "cm")
                 elif input.id == 'L':
@@ -117,8 +120,13 @@ class FlowValveCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             #_imgInput.isFullWidth = True
 
             # Define the value inputs for the command
-            _initTheta = adsk.core.ValueInput.createByReal(defaultTheta)
-            inputs.addValueInput('theta', 'Angle (θ)', 'deg', _initTheta)
+            #_initTheta = adsk.core.ValueInput.createByReal(defaultTheta)
+            #inputs.addValueInput('theta', 'Angle (θ)', 'deg', _initTheta)
+
+            dropDownCommandInput = inputs.addDropDownCommandInput('theta', 'Angle (θ)', adsk.core.DropDownStyles.LabeledIconDropDownStyle)
+            dropDownItems = dropDownCommandInput.listItems
+            dropDownItems.add('70 deg', True)
+            dropDownItems.add('45 deg', False)
 
             _initD = adsk.core.ValueInput.createByReal(defaultD)
             inputs.addValueInput('D', 'Main Pipe Outer Diameter (D)', 'cm', _initD)
@@ -138,6 +146,8 @@ class FlowValveCommandCreatedHandler(adsk.core.CommandCreatedEventHandler):
             inputs.addTextBoxCommandInput('P', 'Transducer distance (P)', f'~ {_initP} cm', 1, True)
             _initWT = round(defaultD/2-(defaultD/2-defaultD/10))
             inputs.addTextBoxCommandInput('WT', 'Wall thickness (WT)', f'~ {_initWT} cm', 1, True)
+
+
         except:
             if ui:
                 ui.messageBox('Failed:\n{}'.format(traceback.format_exc()))
@@ -158,24 +168,6 @@ class FlowValve():
 
     # Properties
     @property
-    def H(self) -> float:
-        return self._H
-    @H.setter
-    def H(self, value: float):
-        self._H = value
-    @property
-    def RH(self) -> float:
-        return self._RH
-    @RH.setter
-    def RH(self, value: float):
-        self._RH = value
-    @property
-    def L(self) -> float:
-        return self._L
-    @L.setter
-    def L(self, value: float):
-        self._L = value
-    @property
     def theta(self) -> float:
         """Angle between sensor-pipe and main-pipe."""
         return self._theta
@@ -184,6 +176,28 @@ class FlowValve():
         """Angle between sensor-pipe and main-pipe."""
         self._theta = value
         self.calculate_P()
+    
+    @property
+    def H(self) -> float:
+        return self._H
+    @H.setter
+    def H(self, value: float):
+        self._H = value
+    
+    @property
+    def RH(self) -> float:
+        return self._RH
+    @RH.setter
+    def RH(self, value: float):
+        self._RH = value
+
+    @property
+    def L(self) -> float:
+        return self._L
+    @L.setter
+    def L(self, value: float):
+        self._L = value
+    
     @property
     def D(self) -> float:
         """Main-pipe diameter."""
@@ -193,6 +207,7 @@ class FlowValve():
         """Main-pipe diameter."""
         self._D = value
         self.calculate_P()
+
     @property
     def P(self) -> float:
         """Distance between transducers."""
@@ -228,7 +243,8 @@ class FlowValve():
         # SENSOR PIPE ------------------------------------------------------------------
         """This part creates the sensor pipe for the flow meter. It is created on an angled plane."""
         const_plane_sp_input = new_comp.constructionPlanes.createInput()
-        const_plane_sp_input.setByAngle(linearEntity=new_comp.xConstructionAxis, angle=adsk.core.ValueInput.createByReal(self.theta), planarEntity=new_comp.xYConstructionPlane)
+
+        const_plane_sp_input.setByAngle(linearEntity=new_comp.xConstructionAxis, angle=adsk.core.ValueInput.createByReal(self._theta), planarEntity=new_comp.xYConstructionPlane)
         const_plane_1 = new_comp.constructionPlanes.add(const_plane_sp_input)
         sketch_sp = new_comp.sketches.add(const_plane_1)
         center_sp = sketch_sp.modelToSketchSpace(center_global)
@@ -448,6 +464,43 @@ class FlowValve():
         const_planeTangent_input.setByTangent(cylinderFace, adsk.core.ValueInput.createByString('90 deg'), circularFace2)
         const_planeTangent8 = new_comp.constructionPlanes.add(const_planeTangent_input)
         # Her skjer det noe feil??
+
+        """sketch_h = new_comp.sketches.add(const_planeTangent8)
+        sketchLines = sketch_SP.sketchCurves.sketchLines
+        sketchArcs = sketch_SP.sketchCurves.sketchArcs
+
+        posArray = [0,1,2]
+        zArray = [-53.5,-50,-51.282,-46]
+        yArray = [-100,-90.35,-87.512,-73]
+
+        for i in posArray:
+            startPoint = adsk.core.Point3D.create(zArray[i],yArray[i],0)
+            endPoint = adsk.core.Point3D.create(zArray[i+1],yArray[i+1],0)
+            sketchLines.addByTwoPoints(startPoint,endPoint)
+
+        posArrayOffset = [0,1,2]
+        zArrayOff = [-46.7808,-52.137,-50.851,-54.264]
+        yArrayOff = [-72.806,-87.523,-90.37,-99.727]
+
+        for i in posArrayOffset:
+            startPoint = adsk.core.Point3D.create(zArrayOff[i],yArrayOff[i],0)
+            endPoint = adsk.core.Point3D.create(zArrayOff[i+1],yArrayOff[i+1],0)
+            sketchLines.addByTwoPoints(startPoint,endPoint)
+        
+        arcStart = adsk.core.Point3D.create(-46,-73,0)
+        arcCenter = adsk.core.Point3D.create(-46.3904,-72.903,0)
+        sketchArcs.addByCenterStartSweep(arcCenter,arcStart,radians(180))
+
+        arcStart = adsk.core.Point3D.create(-53.5,-100,0)
+        arcCenter = adsk.core.Point3D.create(-53.882,-99.8635,0)
+        sketchArcs.addByCenterStartSweep(arcCenter,arcStart,radians(-180))
+
+        #Extrude
+        pipe_sp_profile = sketch_h.profiles.item(0)  
+        ext_pipe_sp_input = new_comp.features.extrudeFeatures.createInput(profile=pipe_sp_profile, operation=adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+        ext_pipe_sp_input.setDistanceExtent(isSymmetric= True, distance=adsk.core.ValueInput.createByReal(2))
+        Handle_ext = new_comp.features.extrudeFeatures.add(ext_pipe_sp_input) """
+
         "Ball"
         const_offsetPlane_input = new_comp.constructionPlanes.createInput()
         const_offsetPlane_input.setByOffset(planarEntity=pipe_sp_profile, offset=adsk.core.ValueInput.createByReal(self.P/2+87))
