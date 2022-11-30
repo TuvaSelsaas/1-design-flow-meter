@@ -163,7 +163,6 @@ class FlowValve():
         self._L = defaultLength             # main pipe length
         self._WT = self.calculate_WT()      # wall thickness of main pipe
         self._d = 15                        # sensor pipe diameter
-        # self._P = defaultP                # distance between transducers
         self._P = self.calculate_P()        # distance between transducers
 
     # Properties
@@ -262,6 +261,7 @@ class FlowValve():
             if geom.surfaceType == adsk.core.SurfaceTypes.CylinderSurfaceType:
                 circularFace = face
                 break
+        
         ##Top spool piece
         const_axis_sp_input = new_comp.constructionAxes.createInput()
         const_axis_sp_input.setByCircularFace(circularFace)
